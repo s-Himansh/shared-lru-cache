@@ -85,6 +85,3 @@ go test -race ./...
 go test -bench=. -benchmem ./...
 ```
 
-## License
-
-MIT
