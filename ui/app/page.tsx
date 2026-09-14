@@ -75,9 +75,9 @@ export default function Dashboard() {
   const metrics = state?.metrics || { hits: 0, misses: 0, evictions: 0, puts: 0, gets: 0, deletes: 0, hit_rate: 0 };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50/50 text-slate-800">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-slate-200/60 bg-slate-100/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
@@ -102,7 +102,7 @@ export default function Dashboard() {
           {/* Left: Controls */}
           <div className="space-y-6">
             {/* Put */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-slate-50/80 border border-slate-200/50 rounded-2xl p-6 shadow-sm">
               <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Add / Update</h2>
               <div className="space-y-3">
                 <input
@@ -110,7 +110,7 @@ export default function Dashboard() {
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
                   placeholder="Key"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-400"
+                  className="w-full bg-slate-100/60 border border-slate-200/50 rounded-xl px-4 py-3 text-slate-800 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   onKeyDown={(e) => e.key === "Enter" && handlePut()}
                 />
                 <input
@@ -118,7 +118,7 @@ export default function Dashboard() {
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   placeholder="Value"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-400"
+                  className="w-full bg-slate-100/60 border border-slate-200/50 rounded-xl px-4 py-3 text-slate-800 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   onKeyDown={(e) => e.key === "Enter" && handlePut()}
                 />
                 <button onClick={handlePut} className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all">
@@ -128,7 +128,7 @@ export default function Dashboard() {
             </div>
 
             {/* Get */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-slate-50/80 border border-slate-200/50 rounded-2xl p-6 shadow-sm">
               <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Lookup</h2>
               <div className="space-y-3">
                 <input
@@ -136,10 +136,10 @@ export default function Dashboard() {
                   value={lookupKey}
                   onChange={(e) => setLookupKey(e.target.value)}
                   placeholder="Key to lookup"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-400"
+                  className="w-full bg-slate-100/60 border border-slate-200/50 rounded-xl px-4 py-3 text-slate-800 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   onKeyDown={(e) => e.key === "Enter" && handleGet()}
                 />
-                <button onClick={handleGet} className="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-bold hover:bg-slate-200 transition-all">
+                <button onClick={handleGet} className="w-full py-3 rounded-xl bg-slate-200/60 border border-slate-200/50 text-slate-600 font-bold hover:bg-slate-200 transition-all">
                   GET
                 </button>
                 {lookupResult && (
@@ -167,7 +167,7 @@ export default function Dashboard() {
             </div>
 
             {/* Shard Distribution */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-slate-50/80 border border-slate-200/50 rounded-2xl p-6 shadow-sm">
               <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Shard Distribution</h3>
               <div className="flex gap-1 items-end h-24">
                 {(state?.shards || []).map((size, i) => {
@@ -190,7 +190,7 @@ export default function Dashboard() {
             </div>
 
             {/* Hit Rate Chart */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-slate-50/80 border border-slate-200/50 rounded-2xl p-6 shadow-sm">
               <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Hit Rate (last 60s)</h3>
               <div className="flex gap-px items-end h-16">
                 {metricsHistory.map((m, i) => (
@@ -207,7 +207,7 @@ export default function Dashboard() {
             </div>
 
             {/* Cache Entries */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-slate-50/80 border border-slate-200/50 rounded-2xl p-6 shadow-sm">
               <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">
                 Cache Entries ({state?.entries?.length || 0})
               </h3>
@@ -236,7 +236,7 @@ export default function Dashboard() {
 
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <div className="bg-slate-50/80 border border-slate-200/50 rounded-xl p-4 shadow-sm">
       <p className="text-xs text-slate-500 mb-1">{label}</p>
       <p className={`text-lg font-bold font-mono ${color}`}>{value}</p>
     </div>
@@ -245,7 +245,7 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 
 function EntryRow({ entry, onDelete }: { entry: CacheEntry; onDelete: (key: string) => void }) {
   return (
-    <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 group">
+    <div className="flex items-center justify-between bg-slate-100/60 border border-slate-200/40 rounded-lg px-3 py-2 group">
       <div className="flex items-center gap-3 min-w-0">
         <span className="text-xs text-slate-400 font-mono w-8">S{entry.shard}</span>
         <span className="text-sm font-mono text-cyan-600 truncate">{entry.key}</span>
