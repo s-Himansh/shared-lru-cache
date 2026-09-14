@@ -52,8 +52,28 @@ func (c *lruCache[K, V]) Put(key K, value V) {
 	}
 }
 
-// Len returns the number of items in the cache.
+func (c *lruCache[K, V]) Delete(key K) bool {
+	if el, ok := c.cache[key]; ok {
+		c.ll.Remove(el)
+		delete(c.cache, key)
+		return true
+	}
+	return false
+}
+
+func (c *lruCache[K, V]) Clear() {
+	c.cache = make(map[K]*list.Element)
+	c.ll.Init()
+}
+
 func (c *lruCache[K, V]) Len() int {
 	return c.ll.Len()
 }
 
+func (c *lruCache[K, V]) Keys() []K {
+	keys := make([]K, 0, c.ll.Len())
+	for el := c.ll.Front(); el != nil; el = el.Next() {
+		keys = append(keys, el.Value.(*entry[K, V]).key)
+	}
+	return keys
+}
