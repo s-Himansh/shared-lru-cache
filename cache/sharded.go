@@ -16,13 +16,14 @@ type ShardedCache[K comparable, V any] struct {
 	locks     []sync.RWMutex
 	hasher    Hasher[K]
 	numShards int
+	capacity  int
+	metrics   Metrics
 }
 
 // Option configures a ShardedCache.
 type Option[K comparable, V any] func(*ShardedCache[K, V])
 
-// WithNumShards sets the number of shards. Must be called before using the cache.
-// Shards are created in NewShardedCache, so this is only effective there.
+// WithNumShards sets the number of shards.
 func WithNumShards[K comparable, V any](n int) Option[K, V] {
 	return func(sc *ShardedCache[K, V]) {
 		if n > 0 {
@@ -37,6 +38,7 @@ func NewShardedCache[K comparable, V any](totalCapacity int, hasher Hasher[K], o
 	sc := &ShardedCache[K, V]{
 		numShards: defaultNumShards,
 		hasher:    hasher,
+		capacity:  totalCapacity,
 	}
 	for _, opt := range opts {
 		opt(sc)
@@ -57,25 +59,31 @@ func NewShardedCache[K comparable, V any](totalCapacity int, hasher Hasher[K], o
 	return sc
 }
 
-// getShardIndex determines which shard a key belongs to.
 func (sc *ShardedCache[K, V]) getShardIndex(key K) int {
 	return int(sc.hasher(key) % uint32(sc.numShards))
 }
 
 // Get retrieves a value from the cache.
-// Uses a full Lock because Get mutates the LRU list (MoveToFront).
 func (sc *ShardedCache[K, V]) Get(key K) (V, bool) {
 	idx := sc.getShardIndex(key)
+	sc.metrics.Gets.Add(1)
 
 	sc.locks[idx].Lock()
 	defer sc.locks[idx].Unlock()
 
-	return sc.shards[idx].Get(key)
+	val, ok := sc.shards[idx].Get(key)
+	if ok {
+		sc.metrics.Hits.Add(1)
+	} else {
+		sc.metrics.Misses.Add(1)
+	}
+	return val, ok
 }
 
 // Put adds or updates a value in the cache.
 func (sc *ShardedCache[K, V]) Put(key K, value V) {
 	idx := sc.getShardIndex(key)
+	sc.metrics.Puts.Add(1)
 
 	sc.locks[idx].Lock()
 	defer sc.locks[idx].Unlock()
@@ -83,9 +91,10 @@ func (sc *ShardedCache[K, V]) Put(key K, value V) {
 	sc.shards[idx].Put(key, value)
 }
 
-// Delete removes a key from the cache. Returns true if the key existed.
+// Delete removes a key from the cache.
 func (sc *ShardedCache[K, V]) Delete(key K) bool {
 	idx := sc.getShardIndex(key)
+	sc.metrics.Deletes.Add(1)
 
 	sc.locks[idx].Lock()
 	defer sc.locks[idx].Unlock()
@@ -113,7 +122,7 @@ func (sc *ShardedCache[K, V]) Clear() {
 	}
 }
 
-// Keys returns all keys in the cache (snapshot, order may vary).
+// Keys returns all keys in the cache.
 func (sc *ShardedCache[K, V]) Keys() []K {
 	var keys []K
 	for i := 0; i < sc.numShards; i++ {
@@ -122,6 +131,32 @@ func (sc *ShardedCache[K, V]) Keys() []K {
 		sc.locks[i].RUnlock()
 	}
 	return keys
+}
+
+// Metrics returns a snapshot of cache performance metrics.
+func (sc *ShardedCache[K, V]) Metrics() MetricsSnapshot {
+	return sc.metrics.Snapshot()
+}
+
+// Capacity returns the total capacity of the cache.
+func (sc *ShardedCache[K, V]) Capacity() int {
+	return sc.capacity
+}
+
+// NumShards returns the number of shards.
+func (sc *ShardedCache[K, V]) NumShards() int {
+	return sc.numShards
+}
+
+// ShardInfo returns the current size of each shard.
+func (sc *ShardedCache[K, V]) ShardInfo() []int {
+	info := make([]int, sc.numShards)
+	for i := 0; i < sc.numShards; i++ {
+		sc.locks[i].RLock()
+		info[i] = sc.shards[i].Len()
+		sc.locks[i].RUnlock()
+	}
+	return info
 }
 
 // StringHasher uses FNV-1a hashing for string keys.

@@ -1,87 +1,78 @@
-# shared-lru-cache
+# sharded-lru-cache
 
-A thread-safe, sharded LRU cache for Go, built with generics.
+A high-performance, thread-safe, sharded LRU cache for Go with a real-time web dashboard.
 
-## Features
+## Architecture
 
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Next.js   │────▶│  Go API      │────▶│  Sharded     │
+│   Dashboard │◀────│  + WebSocket │◀────│  LRU Cache   │
+└─────────────┘     └──────────────┘     └──────────────┘
+   :3000                :8080                16 shards
+```
+
+### Cache Engine (`cache/`)
+- **Sharded design** — 16 independent sub-caches with per-shard mutexes
+- **O(1) operations** — doubly-linked list + hashmap
+- **LRU eviction** — least recently used entries evicted at capacity
 - **Generic** — works with any `comparable` key and `any` value type
-- **Thread-safe** — sharded design with per-shard `RWMutex` for high concurrency
-- **LRU eviction** — least recently used entries are evicted when capacity is reached
-- **Configurable** — adjustable shard count and capacity
-- **Zero dependencies** — standard library only
+- **Metrics** — hit rate, miss rate, eviction count, ops tracking
 
-## Install
+### API Server (`api/`)
+- REST endpoints: `GET`, `PUT`, `DELETE`, `CLEAR`, `STATE`, `METRICS`
+- WebSocket for real-time cache state updates (500ms broadcast)
+- CORS enabled, configurable capacity/shards
 
-```bash
-go get github.com/s-Himansh/shared-lru-cache
-```
+### Dashboard (`ui/`)
+- Live shard distribution visualization
+- Real-time hit rate chart (sliding 60s window)
+- Interactive key/value management
+- Connection status indicator
 
-## Usage
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/s-Himansh/shared-lru-cache/cache"
-)
-
-func main() {
-	// Create a cache with 1000 total capacity and string keys
-	c := cache.NewShardedCache[string, string](1000, cache.StringHasher)
-
-	// Put values
-	c.Put("user:1", "Alice")
-	c.Put("user:2", "Bob")
-
-	// Get values
-	if val, ok := c.Get("user:1"); ok {
-		fmt.Println(val) // "Alice"
-	}
-
-	// Delete
-	c.Delete("user:1")
-
-	// Check size
-	fmt.Println(c.Len()) // 1
-
-	// Custom shard count
-	c2 := cache.NewShardedCache[string, int](10000, cache.StringHasher,
-		cache.WithNumShards[string, int](32),
-	)
-	_ = c2
-}
-```
-
-## API
-
-| Method | Description |
-|--------|-------------|
-| `NewShardedCache[K, V](capacity, hasher, ...Option)` | Create a new sharded cache |
-| `Get(key) (V, bool)` | Retrieve a value (updates recency) |
-| `Put(key, value)` | Add or update a value |
-| `Delete(key) bool` | Remove a key |
-| `Len() int` | Total items across all shards |
-| `Clear()` | Remove all items |
-| `Keys() []K` | Snapshot of all keys |
-| `StringHasher(s string) uint32` | FNV-1a hasher for strings |
-| `IntHasher(i int) uint32` | splitmix32 hasher for integers |
-
-## How it Works
-
-Keys are hashed and distributed across 16 (default) independent LRU sub-caches, each protected by its own mutex. This reduces lock contention compared to a single global lock, enabling higher throughput under concurrent access.
-
-Each shard uses a `container/list` (doubly-linked list) for O(1) LRU ordering and a `map` for O(1) lookups.
-
-## Testing
+## Quick Start
 
 ```bash
-go test -race ./...
+# Docker
+docker compose up
+
+# Or manually
+go run ./cmd/server    # API on :8080
+cd ui && npm run dev   # Dashboard on :3000
 ```
+
+## API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/state` | GET | Full cache state (entries, shards, metrics) |
+| `/api/keys` | GET | List all keys |
+| `/api/put` | POST | Add/update key `{key, value}` |
+| `/api/get` | POST | Lookup key `{key}` |
+| `/api/delete` | POST | Remove key `{key}` |
+| `/api/clear` | POST | Flush entire cache |
+| `/api/metrics` | GET | Performance metrics |
+| `/ws` | WebSocket | Real-time state stream |
+
+## Configuration
+
+| Env Var | Default | Description |
+|---------|---------|-------------|
+| `CACHE_CAPACITY` | 1000 | Total cache capacity |
+| `CACHE_SHARDS` | 16 | Number of shards |
+| `PORT` | 8080 | API server port |
 
 ## Benchmarks
 
-```bash
-go test -bench=. -benchmem ./...
+```
+BenchmarkLRUPut-10          125M    9.3 ns/op    0 B/op   0 allocs
+BenchmarkShardedPut-10       7.6M  155   ns/op   65 B/op   3 allocs
+BenchmarkShardedConcurrent   5.8M  207   ns/op   15 B/op   1 alloc
 ```
 
+## Tech Stack
+
+- **Backend:** Go 1.22, gorilla/websocket, standard library HTTP
+- **Frontend:** Next.js 16, TypeScript, Tailwind CSS
+- **Infra:** Docker, GitHub Actions CI/CD
