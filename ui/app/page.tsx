@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [lookupResult, setLookupResult] = useState<{ found: boolean; key: string; value?: string } | null>(null);
   const [metricsHistory, setMetricsHistory] = useState<Metrics[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectRef = useRef<() => void>(() => {});
 
   const connect = useCallback(() => {
     const ws = new WebSocket(api.wsUrl());
@@ -20,7 +21,7 @@ export default function Dashboard() {
     ws.onopen = () => setConnected(true);
     ws.onclose = () => {
       setConnected(false);
-      setTimeout(connect, 2000);
+      setTimeout(reconnectRef.current, 2000);
     };
     ws.onmessage = (e) => {
       try {
@@ -33,6 +34,10 @@ export default function Dashboard() {
       } catch {}
     };
   }, []);
+
+  useEffect(() => {
+    reconnectRef.current = connect;
+  }, [connect]);
 
   useEffect(() => {
     connect();
