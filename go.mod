@@ -1,3 +1,3 @@
-module github.com/sharded-lru-cache
+module github.com/s-Himansh/shared-lru-cache
 
-go 1.25.1
+go 1.22
