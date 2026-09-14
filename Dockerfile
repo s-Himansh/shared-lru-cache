@@ -1,19 +1,18 @@
-FROM golang:1.26-alpine AS builder
+FROM golang:1.22-alpine AS builder
 WORKDIR /app
 
-COPY go.mod ./
-RUN go mod download
+COPY go.mod go.sum* ./
+RUN go mod download || true
 
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build ./...
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /lru-server ./example
-
-FROM alpine:latest
+FROM alpine:3.20
 
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
-COPY --from=builder /lru-server .
+COPY --from=builder /app .
 
-CMD ["./lru-server"]
+CMD ["echo", "shared-lru-cache library - no binary to run"]
